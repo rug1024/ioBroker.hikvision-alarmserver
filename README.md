@@ -115,6 +115,10 @@ The `ctx` event context has the following properties:
 
 If checked event XML and/or image data is store on the local filesystem under `iobroker-data/hikvision-alarmserver.<instance>`.
 
+Image annotation uses the optional native `canvas` library. The adapter only loads it when annotation and image saving or forwarding are enabled. If it is unavailable, the adapter logs a warning and saves/forwards the original images. Alarm states continue to work without this library.
+
+Die Bildmarkierung verwendet die optionale Bibliothek `canvas`. Sie wird nur geladen, wenn Bildmarkierung und Bildspeicherung oder -weiterleitung aktiviert sind. Ist sie nicht verfügbar, meldet der Adapter eine Warnung und verwendet die Originalbilder. Die Alarm-Datenpunkte funktionieren auch ohne diese Bibliothek.
+
 *Warning!* these files are not currently purged or archived so use with caution or implement an external strategy for this.
 
 
@@ -135,6 +139,7 @@ Make sure to linkage in the events you would like to report to ioBroker includes
   ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+- (rug1024) **FIXED**: Update canvas to 3.x and make image annotation optional so native image dependencies cannot prevent motion detection from starting.
 - (rug1024) **FIXED**: Catch asynchronous alarm request failures and acknowledge requests reliably.
 - (rug1024) **FIXED**: Forward event images when sending is enabled without saving; skip images when neither option is enabled.
 - (rug1024) **FIXED**: Correct client expiry timer context, complete adapter shutdown callbacks and fall back to receipt time for invalid camera timestamps.

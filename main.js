@@ -8,8 +8,6 @@ const fs = require('fs-extra');
 const path = require('node:path');
 const multipart = require('parse-multipart-data');
 
-const canvas = require('canvas');
-
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require('@iobroker/adapter-core');
@@ -47,6 +45,7 @@ class HikvisionAlarmserver extends utils.Adapter {
         this.clientTimers = [];
         this.deviceNameCache = [];
         this.server = null;
+        this.canvas = null;
     }
 
     /**
@@ -55,6 +54,16 @@ class HikvisionAlarmserver extends utils.Adapter {
     async onReady() {
         this.dataDir = utils.getAbsoluteInstanceDataDir(this);
         this.log.debug(JSON.stringify(this.config));
+
+        // Native image rendering is optional. Alarm processing and forwarding
+        // original images must work even if canvas cannot be installed/loaded.
+        if (this.config.annotateImages && (this.config.saveImages || this.config.sendImageInstance)) {
+            try {
+                this.canvas = require('canvas');
+            } catch (err) {
+                this.log.warn('Image annotation unavailable; using original images: ' + err);
+            }
+        }
 
         // Create send config, catching any errors (could be caused by Function)
         try {
@@ -279,7 +288,7 @@ class HikvisionAlarmserver extends utils.Adapter {
         // Default buffer is one passed in
         let imageBuffer = part.data;
 
-        if (this.config.annotateImages) {
+        if (this.config.annotateImages && this.canvas) {
             // See if there are any co-ordinates for target
             let targetRect;
             try {
@@ -296,7 +305,7 @@ class HikvisionAlarmserver extends utils.Adapter {
             }
 
             if (targetRect) {
-                const imgIn = await canvas.loadImage(imageBuffer);
+                const imgIn = await this.canvas.loadImage(imageBuffer);
 
                 let xScale = imgIn.width;
                 let yScale = imgIn.height;
@@ -321,7 +330,7 @@ class HikvisionAlarmserver extends utils.Adapter {
                 const labelPadding = 4;
                 const lableTextRatio = 48;
 
-                const imgOut = canvas.createCanvas(imgIn.width, imgIn.height);
+                const imgOut = this.canvas.createCanvas(imgIn.width, imgIn.height);
                 const context2d = imgOut.getContext('2d');
                 context2d.drawImage(imgIn, 0, 0);
                 context2d.strokeStyle = labelLineStyle;

@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const sinon = require('sinon');
 
 // Real adapter code and XML/multipart parsers; mocked ioBroker, HTTP and canvas.
-function createAdapter() {
+function createAdapter(canvasModule = {}) {
     class Adapter extends EventEmitter {
         constructor() {
             super();
@@ -29,16 +29,20 @@ function createAdapter() {
     server.close = sinon.spy();
     let requestHandler;
     const moduleMock = { exports: {} };
+    const loadCanvas = sinon.stub().callsFake(() => {
+        if (canvasModule instanceof Error) throw canvasModule;
+        return canvasModule;
+    });
     const mockRequire = (id) => {
         if (id === '@iobroker/adapter-core') return { Adapter, getAbsoluteInstanceDataDir: () => '/unused-test-data' };
-        if (id === 'canvas') return {};
+        if (id === 'canvas') return loadCanvas();
         if (id === 'node:http') return { createServer: (handler) => { requestHandler = handler; return server; } };
         return require(id);
     };
     vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8'), {
         module: moduleMock, require: mockRequire, Buffer,
     }, { filename: 'main.js' });
-    return { adapter: moduleMock.exports(), server, requestHandler: () => requestHandler };
+    return { adapter: moduleMock.exports(), server, loadCanvas, requestHandler: () => requestHandler };
 }
 
 const xml = (date = '2026-09-28T18:00:00Z') => Buffer.from(
@@ -191,5 +195,51 @@ describe('HTTP request handling', () => {
         fixture.requestHandler()(request, { end: sinon.spy() });
         request.emit('error', new Error('connection reset'));
         sinon.assert.calledWithMatch(fixture.adapter.log.warn, 'HTTP request error:');
+    });
+});
+
+describe('Optional image annotation', () => {
+    it('starts and processes field detection without loading canvas in motion-only mode', async () => {
+        const { adapter, loadCanvas } = createAdapter(new Error('canvas not installed'));
+        await adapter.onReady();
+        await adapter.handlePayload({ 'content-type': 'application/xml' }, xml());
+        sinon.assert.notCalled(loadCanvas);
+        sinon.assert.calledWith(adapter.setStateChangedAsync, 'aabbccddeeff.fielddetection', true, true);
+        sinon.assert.notCalled(adapter.log.warn);
+    });
+
+    it('does not load canvas when annotation is disabled', async () => {
+        const { adapter, loadCanvas } = createAdapter(new Error('canvas not installed'));
+        adapter.config.saveImages = true;
+        adapter.config.annotateImages = false;
+        await adapter.onReady();
+        sinon.assert.notCalled(loadCanvas);
+    });
+
+    for (const target of ['saveImages', 'sendImageInstance']) {
+        it(`loads canvas when annotation and ${target} are enabled`, async () => {
+            const canvasModule = {};
+            const { adapter, loadCanvas } = createAdapter(canvasModule);
+            adapter.config[target] = target === 'saveImages' ? true : 'telegram.0';
+            await adapter.onReady();
+            sinon.assert.calledOnce(loadCanvas);
+            assert.equal(adapter.canvas, canvasModule);
+        });
+    }
+
+    it('saves and forwards original images if the native canvas module fails to load', async () => {
+        const { adapter, loadCanvas } = createAdapter(new Error('native module load failed'));
+        adapter.config.saveImages = true;
+        adapter.config.sendImageInstance = 'telegram.0';
+        await adapter.onReady();
+        adapter.dumpFile = sinon.stub().resolves();
+        adapter.checkAndSendTo = sinon.stub().resolves();
+        const image = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+        const ctx = { fileBase: 'test' };
+        await adapter.handleJpegPart(ctx, { filename: 'image.jpg', data: image });
+        sinon.assert.calledOnce(loadCanvas);
+        sinon.assert.calledOnce(adapter.log.warn);
+        sinon.assert.calledWith(adapter.dumpFile, ctx, image, 'test-image.jpg');
+        sinon.assert.calledWith(adapter.checkAndSendTo, adapter.sendImageConfig, ctx, image);
     });
 });
