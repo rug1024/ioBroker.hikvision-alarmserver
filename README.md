@@ -135,6 +135,10 @@ Make sure to linkage in the events you would like to report to ioBroker includes
   ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+- (rug1024) **FIXED**: Catch asynchronous alarm request failures and acknowledge requests reliably.
+- (rug1024) **FIXED**: Forward event images when sending is enabled without saving; skip images when neither option is enabled.
+- (rug1024) **FIXED**: Correct client expiry timer context, complete adapter shutdown callbacks and fall back to receipt time for invalid camera timestamps.
+- (rug1024) **TESTING**: Cover field detection, alarm timeout renewal, detection targets, multipart images and request/shutdown failures with regression tests.
 - (copilot) Adapter requires node.js >= 22 now
 - (copilot) Adapter requires admin >= 7.7.22 now
 - (copilot) Adapter requires js-controller >= 6.0.11 now
