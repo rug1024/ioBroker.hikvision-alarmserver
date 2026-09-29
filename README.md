@@ -14,7 +14,7 @@
 
 An adapter to receive alarms/events sent from Hikvision cameras.
 
-This fork is currently version **0.1.1** and includes the fixes described below.
+This fork is currently version **0.1.2** and includes the fixes described below.
 Dieser Fork ist derzeit Version **0.1.1** und enthält die unten beschriebenen Korrekturen.
 
 Tested with Hikvision models:
@@ -141,6 +141,9 @@ Make sure to linkage in the events you would like to report to ioBroker includes
   Placeholder for the next version (at the beginning of the line):
   ### **WORK IN PROGRESS**
 -->
+### 0.1.2 (2026-09-29)
+- (rug1024) **FIXED**: Replace deprecated `createChannel` with `setObjectNotExistsAsync`, preserving existing channel and alarm state IDs.
+
 ### 0.1.1 (2026-09-29)
 - (rug1024) **FIXED**: Correct Admin configuration schema warnings, allow disabling XML/image forwarding, fix XML message validation and limit the listen port to 65535.
 - (rug1024) **FIXED**: Update canvas to 3.x and make image annotation optional so native image dependencies cannot prevent motion detection from starting.

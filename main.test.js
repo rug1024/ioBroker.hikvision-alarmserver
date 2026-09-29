@@ -15,7 +15,8 @@ function createAdapter(canvasModule = {}) {
             this.config = { ...require('./io-package.json').native };
             this.log = { level: 'info' };
             for (const level of ['debug', 'info', 'warn', 'error']) this.log[level] = sinon.spy();
-            for (const method of ['setStateAsync', 'setStateChangedAsync', 'setObjectNotExistsAsync', 'createChannelAsync']) {
+            this.FORBIDDEN_CHARS = /[^._\-/ :!#$%&()+=@^{}|~\p{Ll}\p{Lu}\p{Nd}]+/gu;
+            for (const method of ['setStateAsync', 'setStateChangedAsync', 'setObjectNotExistsAsync']) {
                 this[method] = sinon.stub().resolves();
             }
             this.setState = sinon.spy();
@@ -91,6 +92,24 @@ describe('Alarm event handling', () => {
         await adapter.handlePayload({ 'content-type': 'application/xml' }, xml());
         sinon.assert.calledWith(adapter.setStateChangedAsync, 'aabbccddeeff.human.fielddetection', true, true);
     });
+
+    for (const testCase of [
+        { useChannels: false, useDetectionTargets: true, name: 'human', id: 'human', statePath: 'human' },
+        { useChannels: true, useDetectionTargets: false, name: 'Front.Door', id: 'Front_Door', statePath: 'Front.Door' },
+        { useChannels: true, useDetectionTargets: true, name: 'Front.Door.human', id: 'Front_Door_human', statePath: 'Front.Door.human' },
+    ]) {
+        it(`creates ${testCase.name} without the deprecated channel API and preserves existing IDs`, async () => {
+            adapter.config.useChannels = testCase.useChannels;
+            adapter.config.useDetectionTargets = testCase.useDetectionTargets;
+            const body = Buffer.from(xml().toString().replace(
+                '</EventNotificationAlert>', '<channelName>Front.Door</channelName></EventNotificationAlert>'
+            ));
+            await adapter.handlePayload({ 'content-type': 'application/xml' }, body);
+            sinon.assert.calledWith(adapter.setObjectNotExistsAsync, 'aabbccddeeff.' + testCase.id,
+                sinon.match({ type: 'channel', common: { name: testCase.name }, native: {} }));
+            sinon.assert.calledWith(adapter.setStateChangedAsync, 'aabbccddeeff.' + testCase.statePath + '.fielddetection', true, true);
+        });
+    }
 
     for (const body of ['<broken>', '<EventNotificationAlert/>']) {
         it(`rejects invalid event XML: ${body}`, async () => {

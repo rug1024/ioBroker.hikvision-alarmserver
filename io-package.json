@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "hikvision-alarmserver",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "news": {
+      "0.1.2": {
+        "en": "Replace deprecated channel creation while preserving existing object IDs.",
+        "de": "Veraltete Kanalerstellung ersetzt; bestehende Objekt-IDs bleiben erhalten.",
+        "ru": "Заменён устаревший способ создания каналов с сохранением идентификаторов объектов.",
+        "pt": "Substituída a criação obsoleta de canais, preservando os IDs dos objetos.",
+        "nl": "Verouderde kanaalaanmaak vervangen met behoud van bestaande object-ID’s.",
+        "fr": "Remplacement de la création obsolète des canaux en conservant les identifiants des objets.",
+        "it": "Sostituita la creazione obsoleta dei canali mantenendo gli ID degli oggetti.",
+        "es": "Sustituida la creación obsoleta de canales conservando los identificadores de los objetos.",
+        "pl": "Zastąpiono przestarzałe tworzenie kanałów, zachowując identyfikatory obiektów.",
+        "uk": "Замінено застарілий спосіб створення каналів зі збереженням ідентифікаторів об’єктів.",
+        "zh-cn": "替换已弃用的通道创建方法，并保留现有对象 ID。"
+      },
       "0.1.1": {
         "en": "First update of the rug1024 fork: fixes alarm handling and Admin configuration; updates canvas and makes image annotation optional.",
         "de": "Erste Aktualisierung des rug1024-Forks: Alarmverarbeitung und Admin-Konfiguration korrigiert; canvas aktualisiert und Bildmarkierung optional gemacht.",

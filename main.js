@@ -527,7 +527,14 @@ class HikvisionAlarmserver extends utils.Adapter {
 
             if (channelName != null) {
                 this.log.debug('Creating channel ' + channelName);
-                await this.createChannelAsync(ctx.device, channelName);
+                // Preserve the IDs produced by the former createChannel helper.
+                const deviceId = ctx.device.replace(this.FORBIDDEN_CHARS, '_').replace(/\./g, '_');
+                const channelId = channelName.replace(this.FORBIDDEN_CHARS, '_').replace(/\./g, '_');
+                await this.setObjectNotExistsAsync(deviceId + '.' + channelId, {
+                    type: 'channel',
+                    common: { name: channelName },
+                    native: {},
+                });
             }
 
             this.log.debug('Creating state ' + ctx.stateId);
