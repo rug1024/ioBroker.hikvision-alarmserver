@@ -1,6 +1,6 @@
 {
   "name": "iobroker.hikvision-alarmserver",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "An adapter to receive alarms/events send from Hikvision cameras.",
   "author": "Robin Rainton <robin@rainton.com>",
   "contributors": [
@@ -26,7 +26,6 @@
   },
   "dependencies": {
     "@iobroker/adapter-core": "^3.3.2",
-    "canvas": "^2.11.2",
     "fs-extra": "*",
     "http": "*",
     "parse-multipart-data": "*",
@@ -70,5 +69,8 @@
   "bugs": {
     "url": "https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues"
   },
-  "readmeFilename": "README.md"
+  "readmeFilename": "README.md",
+  "optionalDependencies": {
+    "canvas": "^3.2.3"
+  }
 }

@@ -14,6 +14,9 @@
 
 An adapter to receive alarms/events sent from Hikvision cameras.
 
+This fork is currently version **0.1.2** and includes the fixes described below.
+Dieser Fork ist derzeit Version **0.1.1** und enthält die unten beschriebenen Korrekturen.
+
 Tested with Hikvision models:
 
 - DS-2CD2043G2-I
@@ -115,6 +118,10 @@ The `ctx` event context has the following properties:
 
 If checked event XML and/or image data is store on the local filesystem under `iobroker-data/hikvision-alarmserver.<instance>`.
 
+Image annotation uses the optional native `canvas` library. The adapter only loads it when annotation and image saving or forwarding are enabled. If it is unavailable, the adapter logs a warning and saves/forwards the original images. Alarm states continue to work without this library.
+
+Die Bildmarkierung verwendet die optionale Bibliothek `canvas`. Sie wird nur geladen, wenn Bildmarkierung und Bildspeicherung oder -weiterleitung aktiviert sind. Ist sie nicht verfügbar, meldet der Adapter eine Warnung und verwendet die Originalbilder. Die Alarm-Datenpunkte funktionieren auch ohne diese Bibliothek.
+
 *Warning!* these files are not currently purged or archived so use with caution or implement an external strategy for this.
 
 
@@ -134,7 +141,16 @@ Make sure to linkage in the events you would like to report to ioBroker includes
   Placeholder for the next version (at the beginning of the line):
   ### **WORK IN PROGRESS**
 -->
-### **WORK IN PROGRESS**
+### 0.1.2 (2026-09-29)
+- (rug1024) **FIXED**: Replace deprecated `createChannel` with `setObjectNotExistsAsync`, preserving existing channel and alarm state IDs.
+
+### 0.1.1 (2026-09-29)
+- (rug1024) **FIXED**: Correct Admin configuration schema warnings, allow disabling XML/image forwarding, fix XML message validation and limit the listen port to 65535.
+- (rug1024) **FIXED**: Update canvas to 3.x and make image annotation optional so native image dependencies cannot prevent motion detection from starting.
+- (rug1024) **FIXED**: Catch asynchronous alarm request failures and acknowledge requests reliably.
+- (rug1024) **FIXED**: Forward event images when sending is enabled without saving; skip images when neither option is enabled.
+- (rug1024) **FIXED**: Correct client expiry timer context, complete adapter shutdown callbacks and fall back to receipt time for invalid camera timestamps.
+- (rug1024) **TESTING**: Cover field detection, alarm timeout renewal, detection targets, multipart images and request/shutdown failures with regression tests.
 - (copilot) Adapter requires node.js >= 22 now
 - (copilot) Adapter requires admin >= 7.7.22 now
 - (copilot) Adapter requires js-controller >= 6.0.11 now

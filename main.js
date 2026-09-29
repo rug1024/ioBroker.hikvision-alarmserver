@@ -8,8 +8,6 @@ const fs = require('fs-extra');
 const path = require('node:path');
 const multipart = require('parse-multipart-data');
 
-const canvas = require('canvas');
-
 // The adapter-core module gives you access to the core ioBroker functions
 // you need to create an adapter
 const utils = require('@iobroker/adapter-core');
@@ -47,6 +45,7 @@ class HikvisionAlarmserver extends utils.Adapter {
         this.clientTimers = [];
         this.deviceNameCache = [];
         this.server = null;
+        this.canvas = null;
     }
 
     /**
@@ -55,6 +54,16 @@ class HikvisionAlarmserver extends utils.Adapter {
     async onReady() {
         this.dataDir = utils.getAbsoluteInstanceDataDir(this);
         this.log.debug(JSON.stringify(this.config));
+
+        // Native image rendering is optional. Alarm processing and forwarding
+        // original images must work even if canvas cannot be installed/loaded.
+        if (this.config.annotateImages && (this.config.saveImages || this.config.sendImageInstance)) {
+            try {
+                this.canvas = require('canvas');
+            } catch (err) {
+                this.log.warn('Image annotation unavailable; using original images: ' + err);
+            }
+        }
 
         // Create send config, catching any errors (could be caused by Function)
         try {
@@ -65,7 +74,7 @@ class HikvisionAlarmserver extends utils.Adapter {
                 messageFn: new Function('imageBuffer', 'ctx', `return ${this.config.sendXmlMessage};`),
                 throttle: this.config.sendXmlThrottle,
                 throttleByDevice: this.config.sendXmlThrottleByDevice
-            }
+            };
         } catch (err) {
             this.log.error('Failed to create sendXmlConfig - Send to message for XML is likely malformed: ' + err);
         }
@@ -77,9 +86,9 @@ class HikvisionAlarmserver extends utils.Adapter {
                 messageFn: new Function('imageBuffer', 'ctx', `return ${this.config.sendImageMessage};`),
                 throttle: this.config.sendImageThrottle,
                 throttleByDevice: this.config.sendImageThrottleByDevice
-            }
+            };
         } catch (err) {
-            this.log.error('Failed to create sendImageConfig - Send to message for images is likely malformed: ' + err);          
+            this.log.error('Failed to create sendImageConfig - Send to message for images is likely malformed: ' + err);
         }
 
         const that = this;
@@ -92,17 +101,25 @@ class HikvisionAlarmserver extends utils.Adapter {
                     request.on('data', function (data) {
                         chunks.push(data);
                     });
+                    request.on('error', function (err) {
+                        that.log.warn('HTTP request error: ' + err);
+                    });
                     request.on('end', async function () {
-                        const body = Buffer.concat(chunks);
-                        that.log.debug(`Handling request of ${body.length} bytes`);
-                        if (that.log.level == 'silly') {
-                            // Dump requests for debugging
-                            that.dumpFile({ periodPath: '' }, body, 'lastRequest.txt');
-                        }
+                        try {
+                            const body = Buffer.concat(chunks);
+                            that.log.debug(`Handling request of ${body.length} bytes`);
+                            if (that.log.level == 'silly') {
+                                // Dump requests for debugging
+                                await that.dumpFile({ periodPath: '' }, body, 'lastRequest.txt');
+                            }
 
-                        that.handlePayload(request.headers, body);
-                        response.statusCode == 200; // Always return success
-                        response.end();
+                            await that.handlePayload(request.headers, body);
+                        } catch (err) {
+                            that.log.error('Failed to handle alarm request: ' + err);
+                        } finally {
+                            response.statusCode = 200; // Preserve acknowledgement of camera events
+                            response.end();
+                        }
                     });
                 } else {
                     // Error
@@ -128,7 +145,7 @@ class HikvisionAlarmserver extends utils.Adapter {
     /**
      * Is called when adapter shuts down
      */
-    async onUnload() {
+    async onUnload(callback) {
         try {
             if (this.server) {
                 this.server.close();
@@ -156,6 +173,8 @@ class HikvisionAlarmserver extends utils.Adapter {
             this.log.debug('Unload done');
         } catch (err) {
             this.log.error(err);
+        } finally {
+            callback();
         }
     }
 
@@ -209,7 +228,7 @@ class HikvisionAlarmserver extends utils.Adapter {
                     await this.handleXml(ctx, body);
                     break;
 
-                case 'multipart/form-data':
+                case 'multipart/form-data': {
                     const boundary = multipart.getBoundary(headers[contentTypeHeader]);
                     const parts = multipart.parse(body, boundary);
                     this.log.debug(`Found ${parts.length} parts`);
@@ -231,7 +250,7 @@ class HikvisionAlarmserver extends utils.Adapter {
                     if (!ctx.eventLogged) {
                         this.log.warn('Event logging failed - skipping other parts');
                     } else {
-                        if (!this.config.saveImages && this.sendImageConfig?.instance) {
+                        if (!this.config.saveImages && !this.sendImageConfig?.instance) {
                             this.log.debug('Skipping any image(s) as no save/send enabled');
                         } else {
                             // Now handle image parts
@@ -244,6 +263,7 @@ class HikvisionAlarmserver extends utils.Adapter {
                     }
                     this.log.debug('Finished multipart: ' + JSON.stringify(ctx));
                     break;
+                }
 
                 default:
                     this.log.error('Unhandled content type: ' + contentType);
@@ -254,7 +274,7 @@ class HikvisionAlarmserver extends utils.Adapter {
 
     async handleJpegPart(ctx, part) {
         // Add .jpg to filename if not there
-        let fileParts = path.parse(part.filename);
+        const fileParts = path.parse(part.filename);
         if (fileParts.ext == '') {
             fileParts.ext = '.jpg';
         } else if (fileParts.ext != '.jpg' && fileParts.ext != '.jpeg') {
@@ -268,7 +288,7 @@ class HikvisionAlarmserver extends utils.Adapter {
         // Default buffer is one passed in
         let imageBuffer = part.data;
 
-        if (this.config.annotateImages) {
+        if (this.config.annotateImages && this.canvas) {
             // See if there are any co-ordinates for target
             let targetRect;
             try {
@@ -285,7 +305,7 @@ class HikvisionAlarmserver extends utils.Adapter {
             }
 
             if (targetRect) {
-                const imgIn = await canvas.loadImage(imageBuffer);
+                const imgIn = await this.canvas.loadImage(imageBuffer);
 
                 let xScale = imgIn.width;
                 let yScale = imgIn.height;
@@ -310,8 +330,8 @@ class HikvisionAlarmserver extends utils.Adapter {
                 const labelPadding = 4;
                 const lableTextRatio = 48;
 
-                const imgOut = canvas.createCanvas(imgIn.width, imgIn.height);
-                const context2d = imgOut.getContext('2d')
+                const imgOut = this.canvas.createCanvas(imgIn.width, imgIn.height);
+                const context2d = imgOut.getContext('2d');
                 context2d.drawImage(imgIn, 0, 0);
                 context2d.strokeStyle = labelLineStyle;
                 context2d.lineWidth = labelPadding * 2;
@@ -440,8 +460,11 @@ class HikvisionAlarmserver extends utils.Adapter {
         // Use XML timestamp if we can
         try {
             ctx.ts = new Date(Date.parse(ctx.xml.EventNotificationAlert.dateTime[0]));
+            if (Number.isNaN(ctx.ts.getTime())) {
+                throw new Error('Invalid dateTime');
+            }
         } catch (err) {
-            this.log.debug('No dateTime found - using new Date()');
+            this.log.debug('Missing or invalid dateTime - using new Date()');
             ctx.ts = new Date();
         }
         // Add device & event type to base
@@ -504,7 +527,14 @@ class HikvisionAlarmserver extends utils.Adapter {
 
             if (channelName != null) {
                 this.log.debug('Creating channel ' + channelName);
-                await this.createChannelAsync(ctx.device, channelName);
+                // Preserve the IDs produced by the former createChannel helper.
+                const deviceId = ctx.device.replace(this.FORBIDDEN_CHARS, '_').replace(/\./g, '_');
+                const channelId = channelName.replace(this.FORBIDDEN_CHARS, '_').replace(/\./g, '_');
+                await this.setObjectNotExistsAsync(deviceId + '.' + channelId, {
+                    type: 'channel',
+                    common: { name: channelName },
+                    native: {},
+                });
             }
 
             this.log.debug('Creating state ' + ctx.stateId);
@@ -590,7 +620,7 @@ class HikvisionAlarmserver extends utils.Adapter {
             updateList = true;
             this.log.debug(`New client connection: ${device}`);
         }
-        this.clientTimers[device] = this.setTimeout(this.clentDisconnected, activeConnectionTimeout, device);
+        this.clientTimers[device] = this.setTimeout(() => this.clentDisconnected(device), activeConnectionTimeout);
 
         if (updateList) {
             this.updateConnected();
