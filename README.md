@@ -139,6 +139,7 @@ Make sure to linkage in the events you would like to report to ioBroker includes
   ### **WORK IN PROGRESS**
 -->
 ### **WORK IN PROGRESS**
+- (rug1024) **FIXED**: Correct Admin configuration schema warnings, allow disabling XML/image forwarding, fix XML message validation and limit the listen port to 65535.
 - (rug1024) **FIXED**: Update canvas to 3.x and make image annotation optional so native image dependencies cannot prevent motion detection from starting.
 - (rug1024) **FIXED**: Catch asynchronous alarm request failures and acknowledge requests reliably.
 - (rug1024) **FIXED**: Forward event images when sending is enabled without saving; skip images when neither option is enabled.
