@@ -1,8 +1,21 @@
 {
   "common": {
     "name": "hikvision-alarmserver",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "news": {
+      "0.1.1": {
+        "en": "First update of the rug1024 fork: fixes alarm handling and Admin configuration; updates canvas and makes image annotation optional.",
+        "de": "Erste Aktualisierung des rug1024-Forks: Alarmverarbeitung und Admin-Konfiguration korrigiert; canvas aktualisiert und Bildmarkierung optional gemacht.",
+        "ru": "Первое обновление форка rug1024: исправлены обработка тревог и конфигурация Admin; canvas обновлён, аннотирование изображений стало необязательным.",
+        "pt": "Primeira atualização do fork rug1024: correções no processamento de alarmes e na configuração Admin; canvas atualizado e anotação de imagens opcional.",
+        "nl": "Eerste update van de rug1024-fork: alarmverwerking en Admin-configuratie hersteld; canvas bijgewerkt en beeldannotatie optioneel gemaakt.",
+        "fr": "Première mise à jour du fork rug1024 : corrections du traitement des alarmes et de la configuration Admin ; mise à jour de canvas et annotation des images facultative.",
+        "it": "Primo aggiornamento del fork rug1024: corretta la gestione degli allarmi e la configurazione Admin; canvas aggiornato e annotazione delle immagini resa facoltativa.",
+        "es": "Primera actualización del fork rug1024: corregidos el procesamiento de alarmas y la configuración de Admin; canvas actualizado y anotación de imágenes opcional.",
+        "pl": "Pierwsza aktualizacja forka rug1024: poprawiono obsługę alarmów i konfigurację Admin; zaktualizowano canvas, a oznaczanie obrazów jest opcjonalne.",
+        "uk": "Перше оновлення форка rug1024: виправлено обробку тривог і конфігурацію Admin; canvas оновлено, анотування зображень стало необов’язковим.",
+        "zh-cn": "rug1024 分支的首次更新：修复报警处理和 Admin 配置；更新 canvas，并将图像标注改为可选功能。"
+      },
       "0.1.0": {
         "en": "Added configuration for alarm timeout ([#16](https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues/16)).\nFixed multipart message handling for line crossing/field detection, etc ([#18](https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues/18)).\nOptionally save XML/images & send events using `sendTo` to other adapters ([#20](https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues/20) & [#26](https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues/26)).\nAdded info.connection state ([#22](https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues/22)).\nHandle cases where `TargetRect` is specified in decimals between zero & one ([#24](https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues/24)).",
         "de": "Konfiguration für Alarm Timeout [#16](https://github.com/iobroker-community-adapter/ioBroker.hikvision-alarmserver/issues/16).\nBehobene mehrteilige Nachrichtenübermittlung für Linienübermittlung/Felderkennung usw. [#18](https://github.com/iobroker-community-adapter/ioBroker.hikvision-alarmserver/issues/18).\nOptional speichern Sie XML/Bilder & senden Sie Ereignisse mit sendTo an andere Adapter [#20](https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues/20) & [#26](https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues/2).\nHinzugefügt Info.connection state [#22](https://github.com/iobroker-community-adapters/ioBroker.hikvision-alarmserver/issues/22).\nHandle-Fälle, in denen TargetRect in Dezimals zwischen null und einem [#24] angegeben ist(https://github.com/iobroker-community-adapter/ioBroker.hikvision-alarmserver/issues/24).",
